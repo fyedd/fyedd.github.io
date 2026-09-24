@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>…</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fond: #08090d;
+    --encre: #d8d4c8;
+    --voile: #74747f;
+    --trait: #2b2d38;
+    --lueur: rgba(118, 128, 190, 0.11);
+    color-scheme: dark;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html {
+    height: 100%;
+    background: var(--fond);
+    scroll-padding-top: env(safe-area-inset-top, 0px);
+  }
+  body {
+    min-height: 100%;
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Une lueur froide qui suit le curseur, très lentement */
+  .lueur {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(620px circle at var(--mx, 50%) var(--my, 45%), var(--lueur), transparent 70%);
+  }
+
+  .scene {
+    position: relative;
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 2rem 1.5rem;
+  }
+
+  /* ——— Entrée ——— */
+  #entree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3rem;
+    transition: opacity .9s ease;
+  }
+  #entree.efface { opacity: 0; pointer-events: none; }
+
+  .point {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--encre);
+    opacity: 0;
+    animation: naitre 3s ease .6s forwards, respirer 6s ease-in-out 3.6s infinite;
+  }
+
+  .champs {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.6rem;
+    opacity: 0;
+    animation: apparaitre 2.4s ease 2.6s forwards;
+  }
+
+  input {
+    width: min(18rem, 72vw);
+    padding: .6rem .25rem;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--trait);
+    border-radius: 0;
+    color: var(--encre);
+    font: inherit;
+    font-size: 1.35rem;
+    letter-spacing: .18em;
+    text-align: center;
+    outline: none;
+    transition: border-color .7s ease;
+  }
+  input::placeholder { color: var(--voile); letter-spacing: .3em; opacity: 1; }
+  input:focus { border-bottom-color: var(--encre); }
+
+  .envoi {
+    margin-top: .4rem;
+    min-height: 44px;
+    padding: .5rem 1.4rem;
+    background: none;
+    border: 0;
+    color: var(--voile);
+    font: inherit;
+    font-size: 1.1rem;
+    letter-spacing: .32em;
+    cursor: pointer;
+    transition: color .6s ease;
+  }
+  .envoi:hover, .envoi:focus-visible { color: var(--encre); }
+  .envoi:focus-visible { outline: 1px solid var(--trait); outline-offset: 4px; }
+
+  #message {
+    min-height: 1.6em;
+    margin: 0;
+    color: var(--voile);
+    font-style: italic;
+    font-size: 1.15rem;
+    letter-spacing: .06em;
+    opacity: 0;
+  }
+  #message.visible { animation: apparaitre 1.4s ease forwards; }
+
+  /* ——— Page destination ——— */
+  #page { text-align: center; max-width: 36rem; }
+  #page[hidden], #entree[hidden] { display: none; }
+
+  #titre {
+    margin: 0 0 3rem;
+    font-weight: 300;
+    font-size: clamp(2rem, 7vw, 3.6rem);
+    letter-spacing: .22em;
+    text-indent: .22em;
+    opacity: 0;
+    animation: apparaitre 2.4s ease .3s forwards;
+  }
+  #corps p {
+    margin: 0 0 1.4rem;
+    font-size: clamp(1.2rem, 3.4vw, 1.45rem);
+    line-height: 1.75;
+    opacity: 0;
+    animation: apparaitre 2.2s ease var(--d, 1s) forwards;
+  }
+  #retour {
+    margin-top: 2.5rem;
+    min-height: 44px;
+    padding: .5rem 1.4rem;
+    background: none;
+    border: 0;
+    color: var(--voile);
+    font: inherit;
+    font-style: italic;
+    font-size: 1.05rem;
+    letter-spacing: .12em;
+    cursor: pointer;
+    opacity: 0;
+    animation: apparaitre 2s ease var(--d, 4s) forwards;
+    transition: color .6s ease;
+  }
+  #retour:hover, #retour:focus-visible { color: var(--encre); }
+  #retour:focus-visible { outline: 1px solid var(--trait); outline-offset: 4px; }
+
+  /* Retour à l'entrée : pas de nouvelle cérémonie */
+  .revu .point { animation: respirer 6s ease-in-out infinite; opacity: 1; }
+  .revu .champs { animation: none; opacity: 1; }
+
+  @keyframes naitre { to { opacity: .9; } }
+  @keyframes respirer { 0%, 100% { opacity: .9; } 50% { opacity: .25; } }
+  @keyframes apparaitre { to { opacity: 1; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .point { animation: none; opacity: .9; }
+    .champs, #titre, #corps p, #retour, #message.visible { animation: none; opacity: 1; }
+    #entree { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="lueur" id="lueur" aria-hidden="true"></div>
+
+<main class="scene">
+
+  <form id="entree" autocomplete="off" novalidate>
+    <div class="point" aria-hidden="true"></div>
+    <div class="champs">
+      <input id="nom" name="nom" type="text" placeholder="nom" aria-label="Nom"
+             autocomplete="off" autocapitalize="none" spellcheck="false">
+      <input id="mdp" name="mdp" type="password" placeholder="mot de passe" aria-label="Mot de passe"
+             autocomplete="off">
+      <button class="envoi" type="submit">entrer</button>
+      <p id="message" role="status" aria-live="polite"></p>
+    </div>
+  </form>
+
+  <article id="page" hidden>
+    <h1 id="titre"></h1>
+    <div id="corps"></div>
+    <button id="retour" type="button">revenir</button>
+  </article>
+
+</main>
+
+<script>
+/* ───────────────────────────────────────────────
+   À MODIFIER : une entrée par personne.
+   - la clé (ex. "ombre") est le nom à saisir
+     (majuscules et accents ignorés)
+   - motDePasse : le mot de passe exact
+   - titre + lignes : ce qui s'affiche sur sa page
+   - url (facultatif) : si tu remplis ce champ, la
+     personne est redirigée vers cette page à la place
+     (ex. url: "ombre.html")
+   ─────────────────────────────────────────────── */
+const PAGES = {
+  "Edouard": {
+    motDePasse: "caca",
+    titre: "Edouard",
+    lignes: [
+      "",
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Diane": {
+    motDePasse: "caca",
+    titre: "Diane",
+    lignes: [
+      "",
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Florian": {
+    motDePasse: "caca",
+    titre: "Florian",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Emmanuelle": {
+    motDePasse: "caca",
+    titre: "Emmanuelle",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Charlotte": {
+    motDePasse: "caca",
+    titre: "Charlotte",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Maëlie": {
+    motDePasse: "caca",
+    titre: "Maëlie",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Lenaïg": {
+    motDePasse: "caca",
+    titre: "Lenaïg",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Julia": {
+    motDePasse: "caca",
+    titre: "Julia",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Tania": {
+    motDePasse: "caca",
+    titre: "Tania",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Adrien": {
+    motDePasse: "caca",
+    titre: "Adrien",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Aurélien": {
+    motDePasse: "caca",
+    titre: "Aurélien",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Andrew": {
+    motDePasse: "caca",
+    titre: "Andrew",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Shumétie": {
+    motDePasse: "caca",
+    titre: "Shumétie",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Théo": {
+    motDePasse: "caca",
+    titre: "Théo",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Naël": {
+    motDePasse: "caca",
+    titre: "Naël",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Deniz": {
+    motDePasse: "caca",
+    titre: "Deniz",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Clémence": {
+    motDePasse: "caca",
+    titre: "Clémence",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+  "Andrew": {
+    motDePasse: "caca",
+    titre: "Andrew",
+    lignes: [
+      "Reviens ici, le 30/10/2026, tu en découvriras davantage."
+    ]
+  },
+
+};
+
+/* ─────────────── Mécanique (rien à changer) ─────────────── */
+const norm = s => s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const index = new Map(Object.entries(PAGES).map(([nom, p]) => [norm(nom), p]));
+
+const $ = id => document.getElementById(id);
+const entree = $("entree"), page = $("page"), nom = $("nom"), mdp = $("mdp"), message = $("message");
+const reduit = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const titreOriginal = document.title;
+
+entree.addEventListener("submit", e => {
+  e.preventDefault();
+  const p = index.get(norm(nom.value));
+  setTimeout(() => (p && p.motDePasse === mdp.value) ? ouvrir(p) : refuser(), reduit ? 0 : 500);
+});
+
+function refuser() {
+  mdp.value = "";
+  message.textContent = "Rien ne répond.";
+  message.classList.remove("visible");
+  void message.offsetWidth;            // relance l'animation
+  message.classList.add("visible");
+  mdp.focus();
+}
+
+function ouvrir(p) {
+  if (p.url) { window.location.href = p.url; return; }
+
+  entree.classList.add("efface");
+  setTimeout(() => {
+    entree.hidden = true;
+    $("titre").textContent = p.titre;
+    document.title = p.titre;
+
+    const corps = $("corps");
+    corps.replaceChildren(...p.lignes.map((texte, i) => {
+      const el = document.createElement("p");
+      el.textContent = texte;
+      el.style.setProperty("--d", (1.4 + i * 1.7) + "s");
+      return el;
+    }));
+    $("retour").style.setProperty("--d", (1.4 + p.lignes.length * 1.7 + .6) + "s");
+
+    page.hidden = false;
+    window.scrollTo(0, 0);
+  }, reduit ? 0 : 900);
+}
+
+$("retour").addEventListener("click", () => {
+  page.hidden = true;
+  nom.value = ""; mdp.value = "";
+  message.textContent = ""; message.classList.remove("visible");
+  document.title = titreOriginal;
+  document.body.classList.add("revu");
+  entree.hidden = false;
+  entree.classList.remove("efface");
+  nom.focus();
+});
+
+/* Lueur qui suit le curseur avec un long retard */
+if (!reduit) {
+  const lueur = $("lueur");
+  let tx = innerWidth / 2, ty = innerHeight * .45, x = tx, y = ty;
+  addEventListener("pointermove", e => { tx = e.clientX; ty = e.clientY; });
+  (function boucle() {
+    x += (tx - x) * .035; y += (ty - y) * .035;
+    lueur.style.setProperty("--mx", x + "px");
+    lueur.style.setProperty("--my", y + "px");
+    requestAnimationFrame(boucle);
+  })();
+
+
+  
+}
+
+
+</script>
+
+
+<!-- Compte à rebours -->
+<style>
+  #compteur {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    text-align: center;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-weight: 300;
+    font-size: 1.1rem;
+    letter-spacing: .35em;
+    text-indent: .35em;
+    color: var(--voile, #74747f);
+    pointer-events: none;
+    opacity: 0;
+    animation: cptApparait 3s ease 3s forwards;
+  }
+  @keyframes cptApparait { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    #compteur { animation: none; opacity: 1; }
+  }
+</style>
+
+<div id="compteur" role="timer" aria-label="Compte à rebours"></div>
+
+<script>
+(function () {
+  // 31/10/2026 à 00:00 (attention : mois 0 = janvier, donc octobre = 9)
+  const CIBLE = new Date(2026, 9, 31, 0, 0, 0);
+
+  const el = document.getElementById("compteur");
+  const deux = n => String(n).padStart(2, "0");
+
+  function maj() {
+    const s = Math.max(0, Math.floor((CIBLE - Date.now()) / 1000));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    el.textContent = h + " : " + deux(m) + " : " + deux(s % 60);
+  }
+
+  maj();
+  setInterval(maj, 1000);
+})();
+</script>
+</body>
+</html>
